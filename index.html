@@ -3,120 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RC Scanner Pro</title>
+    <title>RC Scanner</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        :root { --blue: #00d2ff; --red: #ff4b2b; --orange: #ffb347; --bg: #050505; --glass: rgba(255, 255, 255, 0.05); }
-        
+        :root { --primary: #00d2ff; --record: #ff3b3b; --bg: #050505; }
         body {
             margin: 0; background: var(--bg); color: white;
             font-family: 'Inter', -apple-system, sans-serif;
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center;
         }
 
-        /* Fixed Top Player */
-        .header {
-            padding: 25px; background: rgba(10, 10, 15, 0.9);
-            backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1);
-            text-align: center; z-index: 100;
+        /* Abstract Glow Background */
+        .glow {
+            position: absolute; width: 250px; height: 250px;
+            background: radial-gradient(circle, var(--primary), transparent 70%);
+            filter: blur(60px); opacity: 0.15; z-index: -1; animation: float 6s infinite alternate;
         }
+        @keyframes float { from { transform: translate(-20%, -10%); } to { transform: translate(20%, 10%); } }
 
-        .pulse-ring {
-            width: 10px; height: 10px; background: var(--blue); border-radius: 50%;
-            display: inline-block; margin-right: 8px; box-shadow: 0 0 12px var(--blue);
-            animation: ripple 2s infinite;
+        .container { text-align: center; width: 85%; max-width: 400px; z-index: 10; }
+        .loc-label { font-size: 0.7rem; letter-spacing: 5px; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; }
+        h1 { font-weight: 200; font-size: 2.2rem; margin: 0 0 40px 0; }
+
+        /* Audio Player Styling */
+        audio { width: 100%; filter: invert(1); margin-bottom: 20px; }
+
+        /* Action Buttons */
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 20px; border-radius: 20px; font-weight: bold;
+            backdrop-filter: blur(10px); cursor: pointer; transition: 0.3s;
         }
-
-        @keyframes ripple { 0% { box-shadow: 0 0 0 0px rgba(0, 210, 255, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(0, 210, 255, 0); } }
-
-        /* Feed Section */
-        .feed { padding: 20px; overflow-y: auto; flex-grow: 1; padding-bottom: 100px; }
+        .btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .btn.recording { background: var(--record); border-color: var(--record); animation: pulse-red 1.5s infinite; }
         
-        .event-card {
-            background: var(--glass); border-radius: 18px; padding: 15px;
-            margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);
-            display: flex; align-items: center; gap: 15px;
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        /* Cheat Sheet Drawer */
+        #codes-drawer {
+            position: fixed; bottom: -100%; left: 0; width: 100%; height: 80%;
+            background: #111; border-top: 1px solid var(--primary);
+            border-radius: 30px 30px 0 0; padding: 30px; box-sizing: border-box;
+            transition: 0.4s cubic-bezier(0.1, 0.7, 1.0, 0.1); overflow-y: auto; z-index: 100;
         }
-
-        .details h4 { margin: 0; font-size: 0.9rem; letter-spacing: 0.5px; }
-        .details p { margin: 4px 0 0; font-size: 0.75rem; color: #888; }
-
-        /* Floating Cheat Sheet Button */
-        .code-btn {
-            position: fixed; bottom: 30px; right: 20px;
-            background: var(--blue); color: black; border: none;
-            padding: 12px 20px; border-radius: 30px; font-weight: bold;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4); z-index: 200;
-        }
-
-        /* Sliding Drawer for Codes */
-        #drawer {
-            position: fixed; bottom: -80%; left: 0; width: 100%; height: 75%;
-            background: #111; border-top: 2px solid var(--blue);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 300; padding: 25px; box-sizing: border-box;
-            border-radius: 30px 30px 0 0; overflow-y: auto;
-        }
-        #drawer.open { bottom: 0; }
-        .code-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.9rem; }
-        .code-num { color: var(--blue); font-weight: bold; }
-
-        audio { width: 100%; filter: invert(1); margin-top: 15px; border-radius: 8px; }
+        #codes-drawer.open { bottom: 0; }
+        .code-line { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222; font-size: 0.9rem; }
+        .code-num { color: var(--primary); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div style="font-size: 0.7rem; letter-spacing: 4px; color: #555; margin-bottom: 5px;">RUTHERFORD SCANNER</div>
-        <h2 style="margin:0; font-weight: 300;"><span class="pulse-ring"></span>Live Stream</h2>
-        <audio controls src="https://broadcastify.cdnstream1.com/31838"></audio>
-    </div>
+    <div class="glow"></div>
 
-    <div class="feed">
-        <div class="event-card" style="border-left: 4px solid var(--orange)">
-            <div style="font-size: 1.5rem">🔥</div>
-            <div class="details">
-                <h4>Signal 4 (Structure Fire)</h4>
-                <p>Ellenboro - Reported Dispatch</p>
-            </div>
-        </div>
-        <div class="event-card" style="border-left: 4px solid var(--blue)">
-            <div style="font-size: 1.5rem">🚓</div>
-            <div class="details">
-                <h4>10-50 (Vehicle Accident)</h4>
-                <p>US-74 Business, Forest City</p>
-            </div>
-        </div>
-    </div>
+    <div class="container">
+        <div class="loc-label">Rutherford County</div>
+        <h1>Dispatch</h1>
 
-    <button class="code-btn" onclick="document.getElementById('drawer').classList.add('open')">📜 DECODE</button>
+        <audio id="scanner-audio" crossorigin="anonymous" controls src="https://broadcastify.cdnstream1.com/31838"></audio>
 
-    <div id="drawer">
-        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin:0">Rutherford 10-Codes</h2>
-            <button onclick="document.getElementById('drawer').classList.remove('open')" style="background:none; border:none; color:white; font-size: 1.5rem;">✕</button>
+        <div class="btn-group">
+            <button class="btn" id="record-btn" onclick="toggleRecording()">🎤 RECORD</button>
+            <button class="btn" onclick="toggleCodes()">📜 CODES</button>
         </div>
         
-        <div class="code-row"><span class="code-num">10-4</span> <span>Acknowledgment (OK)</span></div>
-        <div class="code-row"><span class="code-num">10-7</span> <span>Out of Service</span></div>
-        <div class="code-row"><span class="code-num">10-8</span> <span>In Service / Available</span></div>
-        <div class="code-row"><span class="code-num">10-10</span> <span>Fight in Progress</span></div>
-        <div class="code-row"><span class="code-num">10-20</span> <span>Location</span></div>
-        <div class="code-row"><span class="code-num">10-23</span> <span>Arrived on Scene</span></div>
-        <div class="code-row"><span class="code-num">10-33</span> <span>Emergency / Officer Needs Help</span></div>
-        <div class="code-row"><span class="code-num">10-42</span> <span>Ending Tour of Duty</span></div>
-        <div class="code-row"><span class="code-num">10-50</span> <span>Vehicle Accident</span></div>
-        <div class="code-row"><span class="code-num">10-61</span> <span>Traffic Stop</span></div>
-        <div class="code-row"><span class="code-num">10-74</span> <span>Negative</span></div>
-        <div class="code-row"><span class="code-num">10-96</span> <span>Mental Subject</span></div>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-        <h3 style="color: var(--orange)">Fire Signals</h3>
-        <div class="code-row"><span class="code-num">Signal 4</span> <span>Structure Fire</span></div>
-        <div class="code-row"><span class="code-num">Signal 7</span> <span>Brush Fire</span></div>
-        <div class="code-row"><span class="code-num">Signal 9</span> <span>Vehicle Fire</span></div>
+        <p id="status-msg" style="font-size: 0.7rem; margin-top: 20px; color: #555;">READY TO STREAM</p>
+    </div>
+
+    <div id="codes-drawer">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin:0">10-Codes</h2>
+            <button onclick="toggleCodes()" style="background:none; border:none; color:white; font-size: 1.5rem;">✕</button>
+        </div>
+        <div class="code-line"><span class="code-num">10-4</span> <span>OK / Acknowledged</span></div>
+        <div class="code-line"><span class="code-num">10-7</span> <span>Out of Service</span></div>
+        <div class="code-line"><span class="code-num">10-8</span> <span>In Service</span></div>
+        <div class="code-line"><span class="code-num">10-20</span> <span>Location</span></div>
+        <div class="code-line"><span class="code-num">10-33</span> <span>Emergency / Help</span></div>
+        <div class="code-line"><span class="code-num">10-50</span> <span>Accident</span></div>
+        <div class="code-line"><span class="code-num">10-61</span> <span>Traffic Stop</span></div>
+        <div class="code-line"><span class="code-num">Signal 4</span> <span>Structure Fire</span></div>
+        <div class="code-line"><span class="code-num">Signal 9</span> <span>Vehicle Fire</span></div>
     </div>
 
     <script>
+        // Drawer Toggle
+        function toggleCodes() {
+            document.getElementById('codes-drawer').classList.toggle('open');
+        }
+
+        // Recording Logic
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        async function toggleRecording() {
+            const btn = document.getElementById('record-btn');
+            const status = document.getElementById('status-msg');
+            const audioEl = document.getElementById('scanner-audio');
+
+            if (!isRecording) {
+                // START RECORDING
+                try {
+                    const stream = audioEl.captureStream ? audioEl.captureStream() : audioEl.mozCaptureStream();
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                    mediaRecorder.onstop = saveRecording;
+                    
+                    audioChunks = [];
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.innerText = "🛑 STOP";
+                    btn.classList.add('recording');
+                    status.innerText = "RECORDING LIVE AUDIO...";
+                } catch (e) {
+                    alert("Recording error: Make sure audio is playing first.");
+                }
+            } else {
+                // STOP RECORDING
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.innerText = "🎤 RECORD";
+                btn.classList.remove('recording');
+                status.innerText = "RECORDING SAVED";
+            }
+        }
+
+        function saveRecording() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const link = document.createElement('a');
+            link.href = audioUrl;
+            link.download = `Scanner-Recording-${Date.now()}.mp3`;
+            link.click();
+        }
+
+        // Register Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
