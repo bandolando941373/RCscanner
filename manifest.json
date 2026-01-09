@@ -1,15 +1,17 @@
 {
   "name": "Rutherford County Scanner",
   "short_name": "RC Scanner",
+  "description": "Live Public Safety feed for Rutherfordton, Forest City, and Spindale.",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#0f0f12",
-  "theme_color": "#1a1a2e",
+  "background_color": "#050505",
+  "theme_color": "#00d2ff",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3755/3755030.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
